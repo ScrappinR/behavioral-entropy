@@ -1,0 +1,16 @@
+{"agent_id": "agent-alpha", "timestamp": 1700000000.0, "action": "query", "latency_ms": 120.5}
+{"agent_id": "agent-alpha", "timestamp": 1700000001.2, "action": "query", "latency_ms": 115.3}
+{"agent_id": "agent-alpha", "timestamp": 1700000002.5, "action": "index", "latency_ms": 130.1}
+{"agent_id": "agent-alpha", "timestamp": 1700000003.8, "action": "query", "latency_ms": 118.7}
+{"agent_id": "agent-alpha", "timestamp": 1700000005.1, "action": "delete", "latency_ms": 95.2}
+{"agent_id": "agent-alpha", "timestamp": 1700000006.3, "action": "query", "latency_ms": 122.4}
+{"agent_id": "agent-alpha", "timestamp": 1700000007.9, "action": "index", "latency_ms": 128.0}
+{"agent_id": "agent-alpha", "timestamp": 1700000009.0, "action": "query", "latency_ms": 116.9}
+{"agent_id": "agent-beta", "timestamp": 1700000000.5, "action": "index", "latency_ms": 85.1}
+{"agent_id": "agent-beta", "timestamp": 1700000001.0, "action": "index", "latency_ms": 90.2}
+{"agent_id": "agent-beta", "timestamp": 1700000001.5, "action": "index", "latency_ms": 87.5}
+{"agent_id": "agent-beta", "timestamp": 1700000002.0, "action": "query", "latency_ms": 110.3}
+{"agent_id": "agent-beta", "timestamp": 1700000002.5, "action": "index", "latency_ms": 88.9}
+{"agent_id": "agent-beta", "timestamp": 1700000003.0, "action": "index", "latency_ms": 91.1}
+{"agent_id": "agent-beta", "timestamp": 1700000003.5, "action": "query", "latency_ms": 105.7}
+{"agent_id": "agent-beta", "timestamp": 1700000004.0, "action": "index", "latency_ms": 86.3}
