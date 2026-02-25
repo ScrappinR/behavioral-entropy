@@ -9,6 +9,7 @@ All ML dependencies are optional. If scikit-learn or scipy are not
 installed, the profiler falls back to pure-Python statistics.
 """
 
+import os
 import time
 import statistics
 import logging
@@ -17,6 +18,10 @@ from typing import Dict, List, Optional, Any, Tuple
 from .types import AgentProfile, AuthenticationResult
 from .entropy import shannon_entropy_numeric
 
+# scipy.stats and sklearn hang on import in MINGW/Git Bash on Windows
+# (threading internals deadlock). Detect MINGW and skip entirely.
+_IS_MINGW = os.environ.get("MSYSTEM", "").startswith("MINGW")
+
 try:
     import numpy as np
     _HAS_NUMPY = True
@@ -24,21 +29,53 @@ except ImportError:
     np = None  # type: ignore[assignment]
     _HAS_NUMPY = False
 
-try:
-    import scipy.stats as sp_stats
-    _HAS_SCIPY = True
-except ImportError:
-    sp_stats = None  # type: ignore[assignment]
-    _HAS_SCIPY = False
+_HAS_SCIPY = False
+sp_stats = None  # type: ignore[assignment]
 
-try:
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.decomposition import PCA
-    from sklearn.cluster import DBSCAN
-    from sklearn.ensemble import IsolationForest
-    _HAS_SKLEARN = True
-except ImportError:
-    _HAS_SKLEARN = False
+
+def _get_scipy_stats():
+    """Lazy import scipy.stats — skipped entirely on MINGW."""
+    global sp_stats, _HAS_SCIPY
+    if _IS_MINGW:
+        return None
+    if _HAS_SCIPY:
+        return sp_stats
+    try:
+        import scipy.stats as _sp
+        sp_stats = _sp
+        _HAS_SCIPY = True
+        return sp_stats
+    except ImportError:
+        return None
+
+
+_HAS_SKLEARN = False
+StandardScaler = None  # type: ignore[assignment,misc]
+PCA = None  # type: ignore[assignment,misc]
+DBSCAN = None  # type: ignore[assignment,misc]
+IsolationForest = None  # type: ignore[assignment,misc]
+
+
+def _load_sklearn():
+    """Lazy import sklearn — skipped entirely on MINGW."""
+    global StandardScaler, PCA, DBSCAN, IsolationForest, _HAS_SKLEARN
+    if _IS_MINGW:
+        return False
+    if _HAS_SKLEARN:
+        return True
+    try:
+        from sklearn.preprocessing import StandardScaler as _SS
+        from sklearn.decomposition import PCA as _PCA
+        from sklearn.cluster import DBSCAN as _DB
+        from sklearn.ensemble import IsolationForest as _IF
+        StandardScaler = _SS
+        PCA = _PCA
+        DBSCAN = _DB
+        IsolationForest = _IF
+        _HAS_SKLEARN = True
+        return True
+    except ImportError:
+        return False
 
 logger = logging.getLogger(__name__)
 
@@ -83,10 +120,11 @@ def extract_timing_features(timings: List[float]) -> Dict[str, float]:
         "autocorrelation_lag1": _autocorrelation_lag1(timings),
     }
 
-    if _HAS_SCIPY and _HAS_NUMPY:
+    _sp = _get_scipy_stats()
+    if _sp is not None and _HAS_NUMPY:
         arr = np.array(timings)
-        features["skewness"] = float(sp_stats.skew(arr))
-        features["kurtosis"] = float(sp_stats.kurtosis(arr))
+        features["skewness"] = float(_sp.skew(arr))
+        features["kurtosis"] = float(_sp.kurtosis(arr))
 
     return features
 
@@ -174,7 +212,7 @@ class BehavioralProfiler:
         self._compute_metrics(profile)
 
         # Train ML models if sklearn available and we have enough data
-        if timing_samples and _HAS_SKLEARN and _HAS_NUMPY:
+        if timing_samples and _HAS_NUMPY and _load_sklearn():
             self._train_ml_models(agent_id, timing_samples)
 
         self.profiles[agent_id] = profile
@@ -209,7 +247,7 @@ class BehavioralProfiler:
         distance = float("inf")
 
         # ML path
-        if _HAS_SKLEARN and _HAS_NUMPY and agent_id in self._anomaly_detectors:
+        if _HAS_NUMPY and _load_sklearn() and agent_id in self._anomaly_detectors:
             if observed_timings and len(observed_timings) >= 3:
                 features = extract_timing_features(observed_timings)
                 fv = np.array([list(features.values())])
